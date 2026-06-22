@@ -1,0 +1,56 @@
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Python build / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+*.whl
+*.tar.gz
+.eggs/
+.venv/
+venv/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+*.bak
+
+# Secrets — never commit
+.env
+.env.*
+*.env
+.env.local
+.env.bak.*
+*.pem
+*.key
+*.crt
+
+# Hermes credential files
+.hermes/
+auth.json
+.openai_codex_oauth.json
+.anthropic_oauth.json
+
+# Planf3 runtime artifacts
+PLAN_OUTPUT/
+specs/
+images/*.png
+!images/oauth-flow.png
+backup/
+
+# OS-generated temp
+nul
+*.tmp
+*.log
