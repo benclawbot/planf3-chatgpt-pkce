@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import secrets
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,16 +49,19 @@ def raw_token_path() -> Path:
 
 
 def _atomic_write(path: Path, data: str) -> None:
-    """Write text atomically: tmp file + os.replace. Windows-safe."""
-    tmp = path.with_name(path.name + ".tmp")
+    """Atomic credential write with owner-only permissions on POSIX."""
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        with open(tmp, "x", encoding="utf-8") as fh:
-            fh.write(data)
-    except FileExistsError:
-        os.remove(tmp)
-        with open(tmp, "x", encoding="utf-8") as fh:
-            fh.write(data)
-    os.replace(tmp, path)
+        if os.name == "posix":
+            os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(data)
+        os.replace(temporary, path)
+        if os.name == "posix":
+            os.chmod(path, 0o600)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def load_auth_json(path: Path) -> dict[str, Any]:

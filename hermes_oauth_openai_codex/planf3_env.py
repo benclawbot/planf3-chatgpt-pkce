@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
@@ -84,16 +85,25 @@ def write_env(
     for key, value in updates.items():
         if key not in keys_updated:
             new_lines.append(f"{key}={value}\n")
+    env_path.parent.mkdir(parents=True, exist_ok=True)
     if backup and env_path.exists():
         bp = _backup_path(env_path)
         if not bp.exists():
             shutil.copy2(env_path, bp)
-    env_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = env_path.with_name(env_path.name + ".tmp")
-    if tmp.exists():
-        tmp.unlink()
-    tmp.write_text("".join(new_lines), encoding="utf-8")
-    os.replace(tmp, env_path)
+            if os.name == "posix":
+                os.chmod(bp, 0o600)
+    fd, temporary = tempfile.mkstemp(prefix=f".{env_path.name}.", dir=env_path.parent)
+    try:
+        if os.name == "posix":
+            os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write("".join(new_lines))
+        os.replace(temporary, env_path)
+        if os.name == "posix":
+            os.chmod(env_path, 0o600)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
     return env_path
 
 
